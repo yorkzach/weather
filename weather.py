@@ -10,8 +10,6 @@ import style
 
 BASE_WEATHER_API_URL = "http://api.openweathermap.org/data/2.5/weather"
 
-# Weather Condition Codes
-# https://openweathermap.org/weather-conditions#Weather-Condition-Codes-2
 THUNDERSTORM = range(200, 300)
 DRIZZLE = range(300, 400)
 RAIN = range(500, 600)
@@ -21,27 +19,11 @@ CLEAR = range(800, 801)
 CLOUDY = range(801, 900)
 
 def _get_api_key():
-    """Fetch the API key from your configuration file.
-
-    Expects a configuration file named "secrets.ini" with structure:
-
-        [openweather]
-        api_key=<YOUR-OPENWEATHER-API-KEY>
-    """
     config = ConfigParser()
     config.read("secrets.ini")
     return config["openweather"]["api_key"]
 
 def build_weather_query(city_input, imperial=False):
-    """Builds the URL for an API request to OpenWeather's weather API.
-
-    Args:
-        city_input (List[str]): Name of a city as collected by argparse
-        imperial (bool): Whether or not to use imperial units for temperature
-
-    Returns:
-        str: URL formatted for a call to OpenWeather's city name endpoint
-    """
     api_key = _get_api_key()
     city_name = " ".join(city_input)
     url_encoded_city_name = parse.quote_plus(city_name)
@@ -53,11 +35,6 @@ def build_weather_query(city_input, imperial=False):
     return url
 
 def read_user_cli_args():
-    """Handles the CLI user interactions.
-
-    Returns:
-        argparse.Namespace: Populated namespace object
-    """
     parser = argparse.ArgumentParser(
         description="gets weather and temperature information for a city"
     )
@@ -73,40 +50,24 @@ def read_user_cli_args():
     return parser.parse_args()
 
 def get_weather_data(query_url):
-    """Makes an API request to a URL and returns the data as a Python object.
-
-    Args:
-        query_url (str): URL formatted for OpenWeather's city name endpoint
-
-    Returns:
-        dict: Weather information for a specific city
-    """
     try:
         response = request.urlopen(query_url)
     except error.HTTPError as http_error:
         if http_error.code == 401:  # 401 - Unauthorized
-            sys.exit("Access denied. Check your API key.")
+            raise Exception("Access denied. Check your API key.")
         elif http_error.code == 404:  # 404 - Not Found
-            sys.exit("Can't find weather data for this city.")
+            raise Exception("Can't find weather data for this city.")
         else:
-            sys.exit(f"Something went wrong... ({http_error.code})")
+            raise Exception(f"Something went wrong... ({http_error.code})")
 
     data = response.read()
 
     try:
         return json.loads(data)
     except json.JSONDecodeError:
-        sys.exit("Couldn't read the server response.")
+        raise Exception("Couldn't read the server response.")
 
 def display_weather_info(weather_data, imperial=False):
-    """Prints formatted weather information about a city.
-
-    Args:
-        weather_data (dict): API response from OpenWeather by city name
-        imperial (bool): Whether or not to use imperial units for temperature
-
-    More information at https://openweathermap.org/current#name
-    """
     city = weather_data["name"]
     weather_id = weather_data["weather"][0]["id"]
     weather_description = weather_data["weather"][0]["description"]
@@ -144,11 +105,9 @@ def _select_weather_display_params(weather_id):
         display_params = ("🔆", style.YELLOW)
     elif weather_id in CLOUDY:
         display_params = ("💨", style.WHITE)
-    else:  # In case the API adds new weather codes
+    else:
         display_params = ("🌈", style.RESET)
     return display_params
-
-# ...
 
 if __name__ == "__main__":
     user_args = read_user_cli_args()

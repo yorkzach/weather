@@ -1,5 +1,7 @@
+# weather_app.py
+
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox, QListWidget, QListWidgetItem
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox, QListWidget, QListWidgetItem, QMessageBox
 from PyQt5.QtCore import Qt
 import json
 import os
@@ -57,8 +59,11 @@ class WeatherApp(QWidget):
         imperial = self.imperial_checkbox.isChecked()
         if city:
             query_url = build_weather_query(city, imperial)
-            weather_data = get_weather_data(query_url)
-            self.add_city(weather_data, imperial)
+            try:
+                weather_data = get_weather_data(query_url)
+                self.add_city(weather_data, imperial)
+            except Exception as e:
+                self.show_error_message(str(e))
     
     def add_city(self, weather_data, imperial):
         city_name = weather_data["name"]
@@ -122,6 +127,14 @@ class WeatherApp(QWidget):
         
         self.save_cities()
         self.update_weather_list()
+    
+    def show_error_message(self, message):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText("Error")
+        msg.setInformativeText(message)
+        msg.setWindowTitle("Error")
+        msg.exec_()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
